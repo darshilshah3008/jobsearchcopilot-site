@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Job Search Copilot — The H1B-aware daily dashboard</title>
+<meta name="description" content="Daily inbox dashboard of live US engineering jobs, scored to your profile, with H1B sponsor flags and AI-drafted outreach. Runs in your own GitHub Actions. $39 one-time." />
+<style>
+:root{--bg:#0a0e27;--card:#131a3a;--text:#e8ecf7;--dim:#a8b2d4;--accent:#4ade80;--accent-dim:#166534;--blue:#60a5fa;--border:#2a3258}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.c{max-width:1100px;margin:0 auto;padding:0 24px}
+nav{padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,14,39,.95);backdrop-filter:blur(8px);z-index:50}
+nav .c{display:flex;justify-content:space-between;align-items:center}
+nav .brand{font-weight:700;font-size:18px}
+nav .brand .dot{color:var(--accent)}
+nav .links{display:flex;gap:28px;align-items:center;font-size:15px}
+nav .links a{color:var(--dim);text-decoration:none}
+nav .links a:hover{color:var(--text)}
+nav .cta{background:var(--accent);color:var(--bg) !important;padding:8px 18px;border-radius:6px;font-weight:600}
+.hero{padding:80px 0 60px;text-align:center}
+.badge{display:inline-block;background:var(--card);border:1px solid var(--border);color:var(--accent);padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:24px}
+h1{font-size:clamp(34px,5vw,56px);line-height:1.1;letter-spacing:-.02em;margin-bottom:20px;font-weight:800}
+h1 .a{color:var(--accent)}
+.sub{font-size:clamp(17px,1.6vw,20px);color:var(--dim);max-width:720px;margin:0 auto 36px}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.btn{padding:14px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:16px;display:inline-block}
+.btn-p{background:var(--accent);color:var(--bg)}
+.btn-s{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:600}
+.meta{color:var(--dim);font-size:14px}
+section{padding:80px 0}
+.lbl{text-align:center;color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+h2{text-align:center;font-size:clamp(28px,3.5vw,40px);margin-bottom:50px;letter-spacing:-.02em;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px}
+.card h3{font-size:18px;margin-bottom:8px}
+.card p{color:var(--dim);font-size:15px}
+.card .ico{font-size:28px;margin-bottom:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px}
+.step{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;position:relative}
+.step .n{position:absolute;top:-16px;left:24px;background:var(--accent);color:var(--bg);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.step h3{font-size:19px;margin:8px 0 10px}
+.step p{color:var(--dim);font-size:15px}
+.demo{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px;overflow:hidden}
+.demo pre{background:#060a1f;border-radius:8px;padding:24px;overflow-x:auto;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:13.5px;line-height:1.55;color:var(--text);white-space:pre}
+.demo .h{color:var(--accent);font-weight:600}
+.demo .d{color:var(--dim)}
+.demo .u{color:var(--blue);text-decoration:underline}
+.demo .h1b{background:var(--accent-dim);color:var(--accent);padding:0 6px;border-radius:3px;font-weight:600}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.plan{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px 28px;display:flex;flex-direction:column}
+.plan.feat{border-color:var(--accent);box-shadow:0 0 60px rgba(74,222,128,.15);position:relative}
+.plan.feat::before{content:'Most Popular';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:4px 14px;border-radius:999px;font-size:12px;font-weight:700}
+.plan h3{font-size:22px;margin-bottom:6px}
+.plan .tag{color:var(--dim);font-size:14px;margin-bottom:22px}
+.plan .price{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.plan .amt{font-size:42px;font-weight:800;letter-spacing:-.02em}
+.plan .per{color:var(--dim);font-size:14px}
+.plan ul{list-style:none;margin:24px 0;flex:1}
+.plan li{padding:8px 0;color:var(--dim);font-size:15px;display:flex;gap:10px;align-items:flex-start}
+.plan li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0}
+.plan .b{display:block;text-align:center;padding:12px;border-radius:8px;font-weight:700;text-decoration:none;background:var(--bg);color:var(--text);border:1px solid var(--border);margin-top:auto}
+.plan.feat .b{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.faq{max-width:760px;margin:0 auto}
+details{border-bottom:1px solid var(--border);padding:18px 0}
+details summary{cursor:pointer;font-weight:600;font-size:17px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details summary::after{content:'+';color:var(--accent);font-size:24px}
+details[open] summary::after{content:'−'}
+details p{color:var(--dim);margin-top:12px;font-size:15px}
+.final{padding:100px 0;text-align:center;background:linear-gradient(180deg,transparent,rgba(74,222,128,.08),transparent)}
+.final h2{margin-bottom:16px}
+.final p{color:var(--dim);margin-bottom:28px;font-size:18px}
+footer{padding:40px 0;border-top:1px solid var(--border);color:var(--dim);font-size:14px;text-align:center}
+footer a{color:var(--dim);text-decoration:none;margin:0 12px}
+footer a:hover{color:var(--text)}
+@media (max-width:640px){.hero{padding:50px 0 40px}nav .links a:not(.cta){display:none}}
+</style>
+</head>
+<body>
+
+<nav><div class="c"><div class="brand">Job Search Copilot<span class="dot">.</span></div><div class="links"><a href="#how">How it works</a><a href="#demo">Demo</a><a href="#pricing">Pricing</a><a href="#pricing" class="cta">Get it</a></div></div></nav>
+
+<section class="hero"><div class="c">
+<div class="badge">Built for engineers who need H1B sponsorship</div>
+<h1>The job-search copilot that tells you<br /><span class="a">who actually sponsors H1B</span>.</h1>
+<p class="sub">A daily inbox dashboard of live US engineering jobs, scored to your profile 0-100, flagged with H1B sponsor status, with AI-drafted outreach. Runs in your own GitHub repo with your own API keys. No SaaS lock-in, no monthly fees.</p>
+<div class="row"><a href="#pricing" class="btn btn-p">Get the template — $39</a><a href="#demo" class="btn btn-s">See a sample email</a></div>
+<p class="meta">14-day refund · Lifetime updates · You own the code</p>
+</div></section>
+
+<section><div class="c">
+<p class="lbl">The problem</p><h2>Job hunting is a full-time job.<br />The existing tools don't get it.</h2>
+<div class="grid">
+<div class="card"><div class="ico">😵‍💫</div><h3>You waste hours on jobs that won't sponsor.</h3><p>LinkedIn lists 1,000 "embedded engineer" roles. You can't tell which 50 actually file H1Bs until you've applied and been ghosted.</p></div>
+<div class="card"><div class="ico">📋</div><h3>Your tracker is a sad spreadsheet.</h3><p>You started a Notion kanban. You stopped updating it on day 3. Jobs you applied to are lost, and so are the ones you wanted to.</p></div>
+<div class="card"><div class="ico">🤖</div><h3>"AI cover letter" tools generate slop.</h3><p>Every recruiter knows what GPT-out-of-the-box sounds like. Your "personalized" outreach gets deleted in 3 seconds.</p></div>
+<div class="card"><div class="ico">💸</div><h3>SaaS trackers want $30/month forever.</h3><p>You'll land a job in 2-6 months. Why pay a subscription that auto-renews until you cancel?</p></div>
+</div>
+</div></section>
+
+<section id="how"><div class="c">
+<p class="lbl">How it works</p><h2>Set up once. Curated dashboard every morning.</h2>
+<div class="steps">
+<div class="step"><div class="n">1</div><h3>Fork the template</h3><p>Click "Use this template" on GitHub. Add 4 secrets (Gmail App Password, OpenAI key, Serper key, your email). Done in 10 minutes.</p></div>
+<div class="step"><div class="n">2</div><h3>Drop in your profile</h3><p>Edit one YAML file: paste your resume bullets, target roles, locations, sponsorship needs. The AI uses this to score every lead 0-100.</p></div>
+<div class="step"><div class="n">3</div><h3>Get your daily email</h3><p>Every morning at 8 AM your time: top 10 active jobs, H1B sponsor flags, draft outreach, Excel tracker attached. Mark "Applied" and it's gone tomorrow.</p></div>
+</div>
+</div></section>
+
+<section id="demo"><div class="c">
+<p class="lbl">A sample email</p><h2>This is what lands in your inbox.</h2>
+<div class="demo"><pre><span class="h">Job Search Copilot — Daily Dashboard for 2026-04-29</span>
+<span class="d">============================================================</span>
+
+Tracker status: New: 14 | Applied: 3 | Interview: 1
+Tip: edit application_tracker.csv on GitHub and set Status=Applied
+     to remove a job from tomorrow's email.
+
+<span class="h">TOP 10 ACTIVE JOBS</span>
+<span class="d">------------------------------------------------------------</span>
+ 1. [97/100, high] <span class="h1b">[H1B Sponsor]</span> Senior Firmware Engineer @ Honeywell
+     Location: Phoenix, AZ
+     Apply: <span class="u">https://careers.honeywell.com/job/24561...</span>
+ 2. [94/100, high] <span class="h1b">[H1B Sponsor]</span> Embedded Software Engineer @ Tesla
+     Location: Palo Alto, CA
+     Apply: <span class="u">https://www.tesla.com/careers/search/job/771...</span>
+ 3. [91/100, high] <span class="h1b">[H1B Sponsor]</span> Embedded Linux Developer @ Rivian
+     Location: Irvine, CA
+     Apply: <span class="u">https://careers.rivian.com/job/embedded-linux...</span>
+ 4. [88/100, high] <span class="h1b">[H1B Sponsor]</span> Senior Embedded Engineer @ Cummins
+     Location: Columbus, IN
+     Apply: <span class="u">https://cummins.jobs/embedded-7821...</span>
+ 5. [82/100, medium] Firmware Engineer @ MidWest Robotics LLC
+     Location: Madison, WI
+     Apply: <span class="u">https://midwestrobotics.io/careers/firmware</span>
+
+<span class="h">OUTREACH DRAFTS READY: 5</span>
+<span class="d">------------------------------------------------------------</span>
+ 1. [recruiter_intro] Honeywell — re: Senior Firmware Engineer
+ 2. [hiring_manager_intro] Tesla — re: Embedded Software Engineer
+ ...and 3 more in dashboard_report.docx
+
+<span class="d">------------------------------------------------------------</span>
+Attachments:
+  application_tracker.xlsx — clickable Apply links, color-coded
+  dashboard_report.docx    — full daily report</pre></div>
+</div></section>
+
+<section id="pricing"><div class="c">
+<p class="lbl">Pricing</p><h2>One-time payment. Yours forever.</h2>
+<div class="plans">
+<div class="plan"><h3>Free</h3><p class="tag">For developers who want to fork and tinker.</p><div class="price"><span class="amt">$0</span></div><ul><li>Public source code on GitHub (MIT)</li><li>Self-serve setup from raw README</li><li>You bring your own API keys</li><li>Community support via GitHub Issues</li></ul><a href="https://github.com/darshilshah3008/Linked" class="b">View on GitHub</a></div>
+<div class="plan feat"><h3>Starter</h3><p class="tag">For job-hunters who want it working today.</p><div class="price"><span class="amt">$39</span><span class="per">one-time</span></div><ul><li>Premium template repo, polished and documented</li><li>Pre-built profiles: Embedded, SWE, Data, ML, DevOps</li><li>5-minute video walkthrough</li><li>Discord community access</li><li>Lifetime updates</li><li>14-day refund — no questions</li></ul><a href="#" class="b">Buy on Gumroad</a></div>
+<div class="plan"><h3>Pro</h3><p class="tag">Done-with-you setup + 6 months guidance.</p><div class="price"><span class="amt">$99</span><span class="per">one-time</span></div><ul><li>Everything in Starter</li><li>30-min 1:1 setup call</li><li>Custom keyword + scoring tuning</li><li>Resume → keywords AI helper</li><li>6 months priority email support</li></ul><a href="#" class="b">Buy Pro</a></div>
+</div>
+</div></section>
+
+<section><div class="c">
+<p class="lbl">FAQ</p><h2>Questions you're probably asking.</h2>
+<div class="faq">
+<details><summary>Why pay if it's open source?</summary><p>The free repo is the engine. The paid template adds polish — pre-built role profiles, a buyer-facing setup guide, video walkthrough, Discord access, lifetime updates. Free is fine if you're a developer comfortable wiring it up. Paid is for getting it working in 10 minutes without reading docs.</p></details>
+<details><summary>What does it cost to actually run, beyond the one-time fee?</summary><p>About $1-3/month in API costs, paid to OpenAI and Serper directly with your own keys. GitHub Actions and Gmail are free. There is no subscription to me — you bought it once.</p></details>
+<details><summary>Will this auto-apply to jobs for me?</summary><p>No. We don't auto-apply, auto-message recruiters, or scrape platforms that prohibit it. The product surfaces jobs, scores them, drafts outreach you review and send, and tracks what you've applied to. You stay in control.</p></details>
+<details><summary>How accurate is the H1B sponsor flag?</summary><p>Based on a curated list of ~150 companies that have publicly filed H1Bs in recent years. Strong signal but not a guarantee — companies can change policy. Always verify in the job description before investing time.</p></details>
+<details><summary>Does it work for non-engineering roles?</summary><p>The infrastructure (search, scoring, tracker, H1B flagging) is role-agnostic. The pre-built profile templates are tuned for engineering. For other roles, edit the keywords in your profile.yaml (5 minutes) or wait for role-specific templates.</p></details>
+<details><summary>What about my privacy?</summary><p>Everything runs in your own GitHub repo. Your resume, profile, and tracker live in your account. Your API keys go directly to OpenAI and Serper — we never see them. We have no server, no database, no account for you.</p></details>
+<details><summary>Refund policy?</summary><p>14-day no-questions-asked refund via Gumroad. Reply to your purchase email and you'll get refunded same day.</p></details>
+</div>
+</div></section>
+
+<section class="final"><div class="c">
+<h2>Stop drowning in job-board noise.<br />Wake up to a curated list.</h2>
+<p>Set it up once. Forget about it. Get hired.</p>
+<a href="#pricing" class="btn btn-p">Get the template — $39</a>
+</div></section>
+
+<footer><div class="c">
+<div>Built by <a href="https://darshilshah3008.github.io" style="color:var(--accent)">Darshil Shah</a> — an embedded software engineer who got tired of LinkedIn.</div>
+<div style="margin-top:12px"><a href="https://darshilshah3008.github.io">Portfolio</a> · <a href="https://github.com/darshilshah3008/Linked">GitHub</a> · <a href="mailto:darshilshah3008@gmail.com">Contact</a></div>
+<div style="margin-top:16px;font-size:12px">© 2026 Darshil Shah. Open source under MIT.</div>
+</div></footer>
+
+</body>
+</html>
